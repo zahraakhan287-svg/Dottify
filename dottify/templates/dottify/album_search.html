@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Search Albums</h1>
+<form method="get" action="{% url 'album_search' %}">
+  <input type="text" name="q" placeholder="Search by title" value="{{ request.GET.q }}">
+  <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+<hr>
+<ul>
+  {% for album in albums %}
+    <li><a href="{% url 'album_detail' album.id %}">{{ album.title }}</a></li>
+  {% empty %}
+    <li>No results found.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

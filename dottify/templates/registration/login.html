@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 400px;">
+  <h2 class="mb-4 text-center">Login to Dottify</h2>
+
+  {% if form.errors %}
+    <div class="alert alert-danger">Invalid username or password. Please try again.</div>
+  {% endif %}
+
+  <form method="post" action="{% url 'login' %}">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Username</label>
+      {{ form.username }}
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Password</label>
+      {{ form.password }}
+    </div>
+    <button type="submit" class="btn btn-dark w-100">Login</button>
+  </form>
+
+  <div class="text-center mt-3">
+    <a href="{% url 'password_reset' %}">Forgot password?</a>
+  </div>
+</div>
+{% endblock %}

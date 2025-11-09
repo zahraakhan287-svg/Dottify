@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ dottify_user.display_name }}</h1>
+<p>Email: {{ dottify_user.user.email }}</p>
+<p>Joined: {{ dottify_user.user.date_joined }}</p>
+
+<h2>Playlists</h2>
+<ul>
+    {% for playlist in dottify_user.playlist_set.all %}
+        <li>
+            {{ playlist.name }} ({{ playlist.get_visibility_display }})
+            <ul>
+                {% for song in playlist.songs.all %}
+                    <li>{{ song.title }}</li>
+                {% empty %}
+                    <li>No songs in this playlist.</li>
+                {% endfor %}
+            </ul>
+        </li>
+    {% empty %}
+        <li>No playlists.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

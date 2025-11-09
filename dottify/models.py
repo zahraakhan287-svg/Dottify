@@ -39,7 +39,7 @@ class Album(models.Model):
     retail_price = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0.00), MaxValueValidator(999.99)])
     release_date = models.DateField(validators=[valid_release_date])
     slug = models.SlugField(blank=True, editable=False)
-
+    public = models.BooleanField(default=True)
     class Meta: 
         constraints = [
             models.UniqueConstraint(

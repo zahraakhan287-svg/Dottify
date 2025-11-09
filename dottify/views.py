@@ -6,36 +6,42 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .models import Album, Playlist, Song, DottifyUser
 from .forms import AlbumForm, SongForm
 from django.utils.text import slugify
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
+DottifyUser = get_user_model()
 # Create your views here.
 
 
 class HomePageView(ListView): 
-    template_name = 'dottify/home.html'
+    template_name = 'home.html'
     context_object_name = 'albums'
     def get_queryset(self):
-        user = self.request.user
-        if user.is_authenticated:
-            if user.groups.filter(name='DottifyAdmin').exists():
-                return Album.objects.all()
-            elif user.groups.filter(name='Artist').exists():
-                return Album.objects.filter(artist_account=user)
-            else:
-                return Album.objects.none()
-        else:
-            return Album.objects.filter(public=True)
+        return Album.objects.none()  
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user
-        if user.is_authenticated and user.groups.filter(name='DottifyAdmin').exists():
-            context['playlists'] = Playlist.objects.all()
-            context['songs'] = Song.objects.all()
-        elif user.is_authenticated:
-            context['playlists'] = Playlist.objects.filter(owner=user)
-        else:
-            context['playlists'] = Playlist.objects.filter(visibility=2)  # public playlists
-        
-        return context
+        user = self.request.user  
 
+        # Default: empty lists
+        albums = Album.objects.none()
+        songs = Song.objects.none()
+        playlists = Playlist.objects.filter(visibility=2)  # public only
+
+        if user.is_authenticated:
+            if user.groups.filter(name="DottifyAdmin").exists():
+                albums = Album.objects.all()
+                songs = Song.objects.all()
+                playlists = Playlist.objects.all()
+            elif user.groups.filter(name="Artist").exists():
+                albums = Album.objects.filter(artist_account=user)
+                playlists = Playlist.objects.filter(owner=user)
+            else:
+                playlists = Playlist.objects.filter(owner=user)
+
+        context['albums'] = albums
+        context['songs'] = songs
+        context['playlists'] = playlists
+
+        return context
     
 
 class AlbumListView(ListView):
@@ -51,6 +57,7 @@ class AlbumListView(ListView):
             elif user.groups.filter(name='Artist').exists():
                 return Album.objects.filter(artist_account=user)
         return Album.objects.filter(public=True)
+
 class AlbumSearchView(LoginRequiredMixin, ListView):
     template_name = 'dottify/album_search.html'
     context_object_name = 'albums'
@@ -72,7 +79,7 @@ class AlbumDetailView(DetailView):
 
 class AlbumCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Album
-    fields = ['title', 'description', 'cover_image']
+    fields = ['title', 'cover_image']
     template_name = 'albums/album_form.html'
 
     def test_func(self):

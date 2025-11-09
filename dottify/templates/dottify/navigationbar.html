@@ -1,0 +1,12 @@
+<nav>
+  <ul style="list-style: none; display: flex; gap: 15px;">
+    <li><a href="{% url 'home' %}">Home</a></li>
+    <li><a href="{% url 'album_list' %}">Albums</a></li>
+    {% if user.is_authenticated %}
+      <li><a href="{% url 'logout' %}">Logout</a></li>
+    {% else %}
+      <li><a href="{% url 'login' %}">Login</a></li>
+    {% endif %}
+  </ul>
+  <hr>
+</nav>

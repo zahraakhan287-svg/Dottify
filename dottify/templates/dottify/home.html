@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome to Dottify!</h1>
+
+{# Albums section #}
+{% if albums %}
+<h2>Albums</h2>
+<ul>
+    {% for album in albums %}
+        <li>
+            <a href="{% url 'album_detail_slug' pk=album.pk slug=album.slug %}">{{ album.title }}</a>
+            by {{ album.artist_name }}
+        </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{# Songs section (only shown to Admins) #}
+{% if songs %}
+<h2>Songs</h2>
+<ul>
+    {% for song in songs %}
+        <li>
+            <a href="{% url 'song_detail' pk=song.pk %}">{{ song.title }}</a>
+            (from <a href="{% url 'album_detail_slug' pk=song.album.pk slug=song.album.slug %}">{{ song.album.title }}</a>)
+        </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{# Playlists section #}
+{% if playlists %}
+<h2>Playlists</h2>
+<ul>
+    {% for playlist in playlists %}
+        <li>{{ playlist.name }} ({{ playlist.get_visibility_display }})</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if not albums and not songs and not playlists %}
+<p>No content available for your account.</p>
+{% endif %}
+
+{% endblock %}

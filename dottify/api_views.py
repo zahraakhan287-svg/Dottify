@@ -3,6 +3,9 @@
 from rest_framework import serializers, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_nested import routers
+from django.contrib.auth import get_user_model
+
 from django.db.models import Avg
 
 from .models import Album, Song, Playlist, DottifyUser
@@ -49,8 +52,8 @@ class NestedSongViewSet(viewsets.ModelViewSet):
         album_id = self.kwargs['album']  
         return Song.objects.filter(album_id=album_id)
         
-class StatisticsAPIView(viewsets.APIView):
-    def get(self, kwargs): 
+class StatisticsAPIView(APIView):
+    def get(self,request, *args, **kwargs): 
         data = {
             'user_count': DottifyUser.objects.count(),
             'album_count': Album.objects.count(),

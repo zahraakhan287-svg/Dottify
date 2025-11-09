@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ song.title }}</h1>
+<p>Album: <a href="{% url 'album_detail_slug' pk=song.album.pk slug=song.album.slug %}">{{ song.album.title }}</a></p>
+
+{% if user.is_authenticated and (user.groups.filter(name='DottifyAdmin').exists or song.album.artist_account == user) %}
+    <a href="{% url 'song_update' pk=song.pk %}" class="btn btn-primary">Edit Song</a>
+    <a href="{% url 'song_delete' pk=song.pk %}" class="btn btn-danger">Delete Song</a>
+{% endif %}
+{% endblock %}
