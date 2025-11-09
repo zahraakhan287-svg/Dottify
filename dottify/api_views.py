@@ -3,8 +3,6 @@
 from rest_framework import serializers, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-#from rest_framework_nested import routers
-from django.contrib.auth import get_user_model
 from django.db.models import Avg
 
 from .models import Album, Song, Playlist, DottifyUser
@@ -15,13 +13,13 @@ class SongSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'album', 'length']
 
 class AlbumSerializer(serializers.ModelSerializer):
-    songset = serializers.SlugRelatedField(many= True, read_only= True, slug_field= 'title')
+    song_set = serializers.SlugRelatedField(many= True, read_only= True, slug_field= 'title')
     class Meta:
         model = Album
         exclude = ['artist_account']
 
 class PlaylistSerializer(serializers.ModelSerializer):
-    owner = serializers.CharField(source='owner.display_name'), read_only= True
+    owner = serializers.CharField(source='owner.display_name', read_only= True)
     songs = serializers.HyperlinkedRelatedField(many=True, read_only=True,view_name='song-detail')
     class Meta:
         model = Playlist
@@ -40,7 +38,7 @@ class SongViewSet(viewsets.ModelViewSet):
 
 
 class PlaylistViewSet(viewsets.ModelViewSet):
-    queryset = Playlist.objects.filter(is_public= True)
+    queryset = Playlist.objects.filter(visibility=2)
     serializer_class = PlaylistSerializer
 
 
@@ -51,13 +49,13 @@ class NestedSongViewSet(viewsets.ModelViewSet):
         album_id = self.kwargs['album']  
         return Song.objects.filter(album_id=album_id)
         
-class StatisticsAPIView(viewsets.ModelViewSet):
+class StatisticsAPIView(viewsets.APIView):
     def get(self, kwargs): 
         data = {
             'user_count': DottifyUser.objects.count(),
             'album_count': Album.objects.count(),
             'playlist_count': Playlist.objects.count(),
-            'song_length_average': Song.objects.aggregate(Avg('duration'))['duration_avg'] or 0,
+            'song_length_average': Song.objects.aggregate(Avg('length'))['length_avg'] or 0,
             
         }
         return Response(data)
