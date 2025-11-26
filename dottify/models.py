@@ -27,7 +27,7 @@ class Album(models.Model):
     FORMAT_CHOICES = [
         ('SNGL', 'Single'),
         ('RMST', 'Remaster'),
-        ('DLUX', 'Deluxe'),
+        ('DLUX', 'Deluxe Edition'),
         ('COMP', 'Compilation'),
         ('LIVE', 'Live Recording'),
     ]
@@ -38,7 +38,7 @@ class Album(models.Model):
     artist_account = models.ForeignKey('DottifyUser', on_delete=models.SET_NULL, null=True, blank=True)    
     retail_price = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0.00), MaxValueValidator(999.99)])
     release_date = models.DateField(validators=[valid_release_date])
-    slug = models.SlugField(blank=True, editable=False)
+    slug = models.SlugField(blank=True, null= True, editable=False)
     public = models.BooleanField(default=True)
     class Meta: 
         constraints = [
@@ -49,11 +49,17 @@ class Album(models.Model):
         ]
     
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.title)
+        base_slug = slugify(self.title) or 'album'
+        slug = base_slug
+        counter = 1
+
+        while Album.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+
+        self.slug = slug
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return f"{self.title} by {self.artist_name} ({self.format or 'Standard'})"
     
 class Song(models.Model):
     title = models.CharField(max_length=800, null= False, blank= False)
@@ -86,7 +92,7 @@ class Playlist(models.Model):
     ]
     name = models.CharField(max_length=800)
     created_at = models.DateTimeField(auto_now_add=True)
-    songs = models.ManyToManyField('Song')
+    songs = models.ManyToManyField('Song', blank= True)
     visibility = models.IntegerField(choices=VISIBILITY_CHOICES, default=0)
     owner = models.ForeignKey('DottifyUser', on_delete=models.CASCADE )
 
@@ -129,6 +135,12 @@ class Rating(models.Model):
         else:
             target = "unknown item"
         return f"{self.user.display_name} rated {target} {self.stars}★"
+    def clean(self):
+        if (self.song and self.album) or (not self.song and not self.album):
+            raise ValidationError("Rating must be for exactly one target: song OR album.")
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 class Comment(models.Model):
     comment_text = models.TextField()
@@ -136,6 +148,12 @@ class Comment(models.Model):
     song = models.ForeignKey('Song', on_delete=models.CASCADE, null=True, blank=True)
     album = models.ForeignKey('Album', on_delete=models.CASCADE, null= True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    def clean(self): 
+        if (self.song and self.album) or (not self.song and not self.album):
+            raise ValidationError("Comment only flags exactly one of the two ")
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         target = self.song or self.album
