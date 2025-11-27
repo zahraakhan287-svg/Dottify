@@ -161,7 +161,7 @@ class AlbumDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 class SongDetailView(DetailView):
     model = Song
-    template_name = 'dottify/song_detail.html'
+    template_name = 'song_detail.html'
     context_object_name = 'song'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
