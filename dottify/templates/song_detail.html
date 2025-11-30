@@ -1,11 +1,28 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>{{ song.title }}</h1>
-<p>Album: <a href="{% url 'album_detail_slug' pk=song.album.pk slug=song.album.slug %}">{{ song.album.title }}</a></p>
+<div class="card mb-4 shadow-sm" style="max-width: 600px; margin: auto;">
+    <div class="card-body">
+        <h2 class="card-title">{{ song.title }}</h2>
+        <p class="card-text">
+            <strong>Album:</strong> 
+            <a href="{% url 'album_detail_slug' pk=song.album.pk slug=song.album.slug %}" class="text-decoration-none">
+                {{ song.album.title }}
+            </a>
+        </p>
+        {% if song.length %}
+            <p class="card-text"><strong>Duration:</strong> {{ song.length }} seconds</p>
+        {% endif %}
 
-{% if can_edit_context %}
-    <a href="{% url 'song_update' pk=song.pk %}" class="btn btn-primary">Edit Song</a>
-    <a href="{% url 'song_delete' pk=song.pk %}" class="btn btn-danger">Delete Song</a>
-{% endif %}
+        {% if can_edit_song %}
+        <div class="mt-3">
+            <a href="{% url 'song_update' pk=song.pk %}" class="btn btn-primary me-2">Edit Song</a>
+            <form action="{% url 'song_delete' pk=song.pk %}" method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Delete Song</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
     <title>{% block title %}Dottify{% endblock %}</title>
 
-    <!-- Bootswatch Darkly Theme -->
-    
     <link rel="stylesheet" href="https://bootswatch.com/5/darkly/bootstrap.min.css">
         <link href="https://fonts.googleapis.com/css2?family=Orbitron&family=Quicksand&display=swap" rel="stylesheet">
 
@@ -84,10 +83,12 @@
                         <form action="{% url 'logout' %}" method="post" style="display:inline;">
                             {% csrf_token %}
                             <button type="submit" class="nav-link btn btn-link" style="padding:0;">
-                                Logout
-                            </button>
+                              Logout
+                                </button>
                         </form>
                     </li>
+
+
 
                 {% else %}
                     <li class="nav-item">

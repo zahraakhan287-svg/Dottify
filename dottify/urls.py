@@ -1,5 +1,7 @@
 # Write your URL patterns here.
+from django.conf import settings
 from rest_framework_nested import routers
+from django.conf.urls.static import static
 from django.urls import path, include
 from .api_views import (
     AlbumViewSet,
@@ -40,24 +42,27 @@ urlpatterns = [
     
     path('', HomePageView.as_view(), name='home'),
     
-    
+
     path('albums/', AlbumListView.as_view(), name='album_list'),
     path('albums/search/', AlbumSearchView.as_view(), name='album_search'),
     path('albums/new/', AlbumCreateView.as_view(), name='album_create'),
     path('albums/<int:pk>/<slug:slug>/', AlbumDetailView.as_view(), name='album_detail_slug'),
-
     path('albums/<int:pk>/', AlbumDetailView.as_view(), name='album_detail'),
     path('albums/<int:pk>/edit/', AlbumUpdateView.as_view(), name='album_update'),
+
     path('albums/<int:pk>/delete/', AlbumDeleteView.as_view(), name='album_delete'),
 
     path('songs/<int:pk>/', SongDetailView.as_view(), name='song_detail'),
     path('songs/new/', SongCreateView.as_view(), name='song_create'),
     path('songs/<int:pk>/edit/', SongUpdateView.as_view(), name='song_update'),
+
     path('songs/<int:pk>/delete/', SongDeleteView.as_view(), name='song_delete'),
-    
+
     path('users/<int:pk>/<slug:slug>/', DottifyUserDetailView.as_view(), name='user_detail_slug'),
     path('users/<int:pk>/', DottifyUserDetailView.as_view(), name='user_detail'),
 
     path('accounts/login/', LoginView.as_view(), name='login'),
-    path('accounts/logout/', LogoutView.as_view(next_page= 'home'), name='logout'),
+    path('accounts/logout/', LogoutView.as_view(next_page='home'), name='logout'),
     ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

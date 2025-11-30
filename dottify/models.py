@@ -59,6 +59,9 @@ class Album(models.Model):
 
         self.slug = slug
         super().save(*args, **kwargs)
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('album_detail_slug', args=[self.pk, self.slug])
 
     
 class Song(models.Model):
@@ -116,7 +119,6 @@ class Rating(models.Model):
     )
     user = models.ForeignKey('DottifyUser', on_delete=models.CASCADE)
     song = models.ForeignKey('Song', on_delete=models.CASCADE, null=True, blank=True)
-    album = models.ForeignKey('Album', on_delete=models.CASCADE, null= True, blank=True)
     
     class Meta:
         constraints = [
@@ -125,27 +127,13 @@ class Rating(models.Model):
                 name='rating_stars_between_0_and_5'
             )
         ]
-
-
     def __str__(self):
-        if self.song:
-            target = f"song '{self.song.title}'"
-        elif self.album:
-            target = f"album '{self.album.title}'"
-        else:
-            target = "unknown item"
-        return f"{self.user.display_name} rated {target} {self.stars}★"
-    def clean(self):
-        if (self.song and self.album) or (not self.song and not self.album):
-            raise ValidationError("Rating must be for exactly one target: song OR album.")
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+        return f"{self.user.display_name} rated '{self.song.title}' {self.stars}★"
+
 
 class Comment(models.Model):
     comment_text = models.TextField()
     user = models.ForeignKey('DottifyUser', on_delete=models.CASCADE)
-    song = models.ForeignKey('Song', on_delete=models.CASCADE, null=True, blank=True)
     album = models.ForeignKey('Album', on_delete=models.CASCADE, null= True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     def clean(self): 

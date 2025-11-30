@@ -1,5 +1,6 @@
 # Use this file for your API viewsets only
 # E.g., from rest_framework import ...
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -31,6 +32,8 @@ class NestedSongViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         album_id = self.kwargs.get('album_pk')
+        album = get_object_or_404(Album, id=album_id)
+
         return Song.objects.filter(album_id=album_id)
         
 class StatisticsAPIView(APIView):
@@ -39,7 +42,7 @@ class StatisticsAPIView(APIView):
             'user_count': DottifyUser.objects.count(),
             'album_count': Album.objects.count(),
             'playlist_count': Playlist.objects.count(),
-            'song_length_average': Song.objects.aggregate(Avg('length'))['length__avg'] or 0,
+            'song_length_average': int(Song.objects.aggregate(Avg('length'))['length__avg'] or 0),
             
         }
         return Response(data)

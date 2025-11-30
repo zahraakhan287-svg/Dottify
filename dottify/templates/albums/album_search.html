@@ -1,17 +1,37 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h1>Search Albums</h1>
-<form method="get" action="{% url 'album_search' %}">
-  <input type="text" name="q" placeholder="Search by title" value="{{ request.GET.q }}">
-  <button type="submit" class="btn btn-primary">Search</button>
+<h1 class="mb-4 text-center">Search Albums</h1>
+
+<form method="get" action="{% url 'album_search' %}" class="mb-4 d-flex justify-content-center">
+    <input type="text" name="q" class="form-control me-2" placeholder="Search by title" value="{{ request.GET.q }}" style="max-width: 400px;">
+    <button type="submit" class="btn btn-primary">Search</button>
 </form>
 
-<hr>
-<ul>
-  {% for album in albums %}
-    <li><a href="{% url 'album_detail' album.id %}">{{ album.title }}</a></li>
-  {% empty %}
-    <li>No results found.</li>
-  {% endfor %}
-</ul>
+{% if albums %}
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for album in albums %}
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            {% if album.cover_image %}
+                <img src="{{ album.cover_image.url }}" class="card-img-top" alt="{{ album.title }}">
+            {% else %}
+                <img src="{{ MEDIA_URL }}no_cover.jpg" class="card-img-top" alt="No cover available">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">
+                  <a href="{% url 'album_detail' pk=album.pk %}" class="text-decoration-none">
+                  {{ album.title }}
+                  </a>
+                </h5>
+                <p class="card-text">{{ album.artist_name }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-center mt-4">No results found.</p>
+{% endif %}
+
 {% endblock %}

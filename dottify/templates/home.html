@@ -1,46 +1,66 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Welcome to Dottify!</h1>
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Welcome to Dottify!</h1>
 
-{# Albums section #}
-{% if albums %}
-<h2>Albums</h2>
-<ul>
-    {% for album in albums %}
-        <li>
-            <a href="{% url 'album_detail_slug' pk=album.pk slug=album.slug %}">{{ album.title }}</a>
-            by {{ album.artist_name }}
-        </li>
-    {% endfor %}
-</ul>
-{% endif %}
+    {# Albums Section #}
+    {% if albums %}
+    <h2 class="mb-3">Albums</h2>
+    <div class="row">
+        {% for album in albums %}
+        <div class="col-6 col-md-3 mb-3"> {# 4 per row on md+, 2 per row on xs-sm #}
+            <div class="card h-100 shadow-sm text-center">
+                {% if album.cover_image %}
+                <img src="{{ album.cover_image.url }}" class="card-img-top" alt="{{ album.title }}" style="height: 150px; object-fit: cover;">
+                {% else %}
+                <img src="{{ MEDIA_URL }}no_cover.jpg" class="card-img-top" alt="No cover" style="height: 150px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title mb-1">{{ album.title }}</h6>
+                    <p class="card-text mb-2" style="font-size: 0.9rem;">{{ album.artist_name }}</p>
+                    <a href="{% url 'album_detail_slug' pk=album.pk slug=album.slug %}" class="btn btn-sm btn-primary mt-auto">View</a>
+                    {% if album.can_edit_album %}
+                    <a href="{% url 'album_update' pk=album.pk %}" class="btn btn-sm btn-secondary mt-1">Edit</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-{# Songs section (only shown to Admins) #}
-{% if songs %}
-<h2>Songs</h2>
-<ul>
-    {% for song in songs %}
-        <li>
+    {# Songs Section #}
+    {% if songs %}
+    <h2 class="mt-5 mb-3">Songs</h2>
+    <div class="list-group">
+        {% for song in songs %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
             <a href="{% url 'song_detail' pk=song.pk %}">{{ song.title }}</a>
-            (from <a href="{% url 'album_detail_slug' pk=song.album.pk slug=song.album.slug %}">{{ song.album.title }}</a>)
-        </li>
-    {% endfor %}
-</ul>
-{% endif %}
+            {% if song.can_edit_song %}
+            <a href="{% url 'song_update' pk=song.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-{# Playlists section #}
-{% if playlists %}
-<h2>Playlists</h2>
-<ul>
-    {% for playlist in playlists %}
-        <li>{{ playlist.name }} ({{ playlist.get_visibility_display }})</li>
-    {% endfor %}
-</ul>
-{% endif %}
+    {# Playlists Section #}
+    {% if playlists %}
+    <h2 class="mt-5 mb-3">Playlists</h2>
+    <div class="list-group">
+        {% for playlist in playlists %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ playlist.name }}</span>
+            <span class="badge bg-info">{{ playlist.get_visibility_display }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-{% if not albums and not songs and not playlists %}
-<p>No content available for your account.</p>
-{% endif %}
-
+    {# Empty state #}
+    {% if not albums and not songs and not playlists %}
+    <p class="text-center mt-5">No content available for your account.</p>
+    {% endif %}
+</div>
 {% endblock %}

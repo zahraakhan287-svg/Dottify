@@ -1,6 +1,6 @@
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .models import Album, Playlist, Song, DottifyUser
@@ -47,7 +47,19 @@ class HomePageView(ListView):
                 albums = Album.objects.none()
                 songs = Song.objects.none()
         playlists = playlists.prefetch_related('songs')
+        for album in albums:
+            album.can_edit_album = (
+                user.is_authenticated and
+                (user.groups.filter(name='DottifyAdmin').exists() or
+                 (album.artist_account and album.artist_account.user == user))
+            )
 
+        for song in songs:
+            song.can_edit_song = (
+                user.is_authenticated and
+                (user.groups.filter(name='DottifyAdmin').exists() or
+                 (song.album.artist_account and song.album.artist_account.user == user))
+            )
 
         context['albums'] = albums
         context['songs'] = songs
@@ -127,6 +139,7 @@ class AlbumCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Album
     form_class = AlbumForm
     template_name = 'albums/album_form.html'
+    
 
     def test_func(self):
         user = self.request.user
@@ -135,6 +148,8 @@ class AlbumCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         dottify_user = DottifyUser.objects.get(user=self.request.user)
         form.instance.artist_account = dottify_user
         return super().form_valid(form)
+    def get_absolute_url(self):
+        return reverse('album_detail_slug', kwargs={'pk': self.pk, 'slug': self.slug})
 
 class AlbumUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Album
@@ -144,17 +159,26 @@ class AlbumUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def test_func(self):
         album = self.get_object()
         user = self.request.user
-        return user.groups.filter(name='DottifyAdmin').exists() or album.artist_account.user == user
+        return user.groups.filter(name='DottifyAdmin').exists() or (album.artist_account and album.artist_account.user == user)
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        self.object.refresh_from_db()
+        return response
+
+    def get_success_url(self):
+        return reverse('album_detail_slug', kwargs={'pk': self.object.pk, 'slug': self.object.slug})
 
 class AlbumDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Album
     template_name = 'albums/album_confirm_delete.html'
-    success_url = reverse_lazy('home')
+    success_url = reverse_lazy('album_list')
 
     def test_func(self):
         album = self.get_object()
         user = self.request.user
-        return user.groups.filter(name='DottifyAdmin').exists() or album.artist_account.user == user
+        return user.groups.filter(name='DottifyAdmin').exists() or (
+            album.artist_account and album.artist_account.user == user
+        )
 
     def handle_no_permission(self):
         return HttpResponseForbidden("You are not allowed to delete this album.")
@@ -199,23 +223,25 @@ class SongUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         def test_func(self):
             song = self.get_object()
             user = self.request.user
-            return user.groups.filter(name='DottifyAdmin').exists() or song.album.artist_account.user == user
+            return user.groups.filter(name='DottifyAdmin').exists() or (song.album.artist_account and song.album.artist_account.user == user)
 
         def handle_no_permission(self):
             return HttpResponseForbidden("You are not allowed to edit this song.")
 class SongDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Song
-    template_name = 'dottify/song_confirm_delete.html'
-    success_url = reverse_lazy('home')
+    template_name = 'songs/song_confirm_delete.html'
+    success_url = reverse_lazy('album_detail_slug')
 
     def test_func(self):
         song = self.get_object()
         user = self.request.user
-        return user.groups.filter(name='DottifyAdmin').exists() or song.album.artist_account.user == user
+        return user.groups.filter(name='DottifyAdmin').exists() or (
+            song.album.artist_account and song.album.artist_account.user == user
+        )
 
     def handle_no_permission(self):
         return HttpResponseForbidden("You are not allowed to delete this song.")
-    
+
 class DottifyUserDetailView(DetailView):
     model= DottifyUser
     template_name = 'dottify/user_detail.html'

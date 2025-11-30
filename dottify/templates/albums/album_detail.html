@@ -1,32 +1,64 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>{{ album.title }}</h1>
-<p><strong>Artist:</strong> {{ album.artist_name }}</p>
-<p><strong>Release date:</strong> {{ album.release_date }}</p>
+<div style="max-width: 900px; margin: auto; padding: 20px; font-family: Arial, sans-serif;">
 
-{% if can_edit %}
-  <a href="{% url 'album_update' pk=album.pk %}" class="btn btn-primary">Edit</a>
-  <a href="{% url 'album_delete' pk=album.pk %}" class="btn btn-danger">Delete</a>
-{% endif %}
+    <!-- Album Header -->
+    <div style="display: flex; align-items: center; gap: 30px; margin-bottom: 30px;">
+        {% if album.cover_image %}
+            <img src="{{ album.cover_image.url }}" alt="{{ album.title }}" style="width: 250px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        {% else %}
+            <img src="{{ MEDIA_URL }}no_cover.jpg" alt="No cover available" style="width: 250px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        {% endif %}
 
-<h2>Songs</h2>
-<ul>
-    {% for song in album.song_set.all %}
-        <li>
-            <a href="{% url 'song_detail' pk=song.pk %}">{{ song.title }}</a>
-        </li>
-    {% empty %}
-        <li>No songs in this album.</li>
-    {% endfor %}
-</ul>
-<h2>Comments</h2>
-<ul>
-    {% for comment in comments %}
-        <li>{{ comment.content }}</li>
-    {% empty %}
-        <li>No comments yet.</li>
-    {% endfor %}
-</ul>
+        <div>
+            <h1 style="margin-bottom: 10px;">{{ album.title }}</h1>
+            <p><strong>Artist:</strong> {{ album.artist_name }}</p>
+            <p><strong>Release Date:</strong> {{ album.release_date }}</p>
+            {% if album.format %}
+                <p><strong>Format:</strong> {{ album.get_format_display }}</p>
+            {% endif %}
+
+            {% if can_edit_album %}
+                <a href="{% url 'album_update' pk=album.pk %}" class="btn btn-primary" style="margin-right: 10px;">Edit</a>
+                <form action="{% url 'album_delete' pk=album.pk %}" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Songs List -->
+    <div style="margin-bottom: 30px;">
+        <h2 style="border-bottom: 2px solid #ccc; padding-bottom: 5px;">Songs</h2>
+        <ul style="list-style: none; padding-left: 0;">
+            {% for song in album.song_set.all %}
+                <li style="padding: 5px 0; border-bottom: 1px solid #eee;">
+                    <a href="{% url 'song_detail' pk=song.pk %}" style="text-decoration: none; color: #007bff;">{{ song.title }}</a>
+                    {% if song.length %}
+                        <span style="color: #888; font-size: 0.9em;">({{ song.length }} sec)</span>
+                    {% endif %}
+                </li>
+            {% empty %}
+                <li>No songs in this album.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Comments Section -->
+    <div>
+        <h2 style="border-bottom: 2px solid #ccc; padding-bottom: 5px;">Comments</h2>
+        <ul style="list-style: none; padding-left: 0;">
+            {% for comment in comments %}
+                <li style="padding: 10px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 10px; background-color: #f9f9f9;">
+                    {{ comment.comment_text }}
+                </li>
+            {% empty %}
+                <li>No comments yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
 {% endblock %}
-

@@ -1,11 +1,45 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>{% if form.instance.pk %}Edit Album{% else %}New Album{% endif %}</h1>
+<div class="container mt-4">
+    <h1 class="mb-4">{% if form.instance.pk %}Edit Album{% else %}New Album{% endif %}</h1>
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-success">Save</button>
-</form>
+    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.title.label_tag }}
+            {{ form.title|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+            {{ form.artist_name.label_tag }}
+            {{ form.artist_name|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+            {{ form.release_date.label_tag }}
+            {{ form.release_date|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+            {{ form.retail_price.label_tag }}
+            {{ form.retail_price|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+            {{ form.format.label_tag }}
+            {{ form.format|add_class:"form-select" }}
+        </div>
+        <div class="mb-3">
+            {{ form.cover_image.label_tag }}
+            {{ form.cover_image|add_class:"form-control" }}
+        </div>
+
+        {% if form.instance.cover_image %}
+        <div class="mb-3">
+            <label>Current Cover:</label><br>
+            <img src="{{ form.instance.cover_image.url }}" alt="Current cover" style="max-width:200px;">
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-success">Save</button>
+        <a href="{% url 'album_list' %}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+</div>
 {% endblock %}

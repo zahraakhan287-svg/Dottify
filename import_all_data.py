@@ -1,13 +1,18 @@
 import os
 import csv
+from django.core.files import File
 import django
 from datetime import datetime
 
-# --- Setup Django ---
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'MusicDBInc.settings')
 django.setup()
 
 from dottify.models import Album, Song, DottifyUser
+ALBUM_CSV = 'sample_data/albums.csv'
+SONG_CSV = 'sample_data/songs.csv'
+IMAGES_DIR = 'sample_data/images'
+DEFAULT_COVER = 'media/no_cover.jpg'
+
 def parse_date(date_str):
     try:
         return datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -19,8 +24,8 @@ def parse_price(price_str):
         return float(price_str)
     except (ValueError, TypeError):
         return 0.0
-# --- Import albums ---
-with open('sample_data/albums.csv', newline='', encoding='utf-8') as f:
+
+with open(ALBUM_CSV, newline='', encoding='utf-8') as f:
     reader = csv.DictReader(f)
     for row in reader:
         album, created = Album.objects.get_or_create(
@@ -31,15 +36,22 @@ with open('sample_data/albums.csv', newline='', encoding='utf-8') as f:
             format=(row.get('Format') or '').strip()
         )
 
-        cover_image = (row.get('CoverImage') or '').strip()
-        if cover_image:
-            album.cover_image = cover_image
-            album.save()
+        cover_image_name = (row.get('CoverImage') or '').strip()
+        if cover_image_name:
+            cover_image_path = os.path.join(IMAGES_DIR, cover_image_name)
+            if os.path.exists(cover_image_path):
+                with open(cover_image_path, 'rb') as img_file:
+                    album.cover_image.save(os.path.basename(cover_image_path), File(img_file), save=True)
+            else:
+                with open(DEFAULT_COVER, 'rb') as img_file:
+                    album.cover_image.save('no_cover.jpg', File(img_file), save=True)
+        else:
+            with open(DEFAULT_COVER, 'rb') as img_file:
+                album.cover_image.save('no_cover.jpg', File(img_file), save=True)
 
         print(f"{'Created' if created else 'Exists'} album: {album.title}")
 
-# --- Import songs ---
-with open('sample_data/songs.csv', newline='', encoding='utf-8') as f:
+with open(SONG_CSV, newline='', encoding='utf-8') as f:
     reader = csv.DictReader(f)
     for row in reader:
         album_id = row['Album']
