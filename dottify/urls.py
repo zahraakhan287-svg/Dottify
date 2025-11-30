@@ -46,12 +46,13 @@ urlpatterns = [
     path('albums/', AlbumListView.as_view(), name='album_list'),
     path('albums/search/', AlbumSearchView.as_view(), name='album_search'),
     path('albums/new/', AlbumCreateView.as_view(), name='album_create'),
-    path('albums/<int:pk>/<slug:slug>/', AlbumDetailView.as_view(), name='album_detail_slug'),
-    path('albums/<int:pk>/', AlbumDetailView.as_view(), name='album_detail'),
+    
     path('albums/<int:pk>/edit/', AlbumUpdateView.as_view(), name='album_update'),
-
     path('albums/<int:pk>/delete/', AlbumDeleteView.as_view(), name='album_delete'),
 
+    path('albums/<int:pk>/<slug:slug>/', AlbumDetailView.as_view(), name='album_detail_slug'),
+    path('albums/<int:pk>/', AlbumDetailView.as_view(), name='album_detail'),
+    
     path('songs/<int:pk>/', SongDetailView.as_view(), name='song_detail'),
     path('songs/new/', SongCreateView.as_view(), name='song_create'),
     path('songs/<int:pk>/edit/', SongUpdateView.as_view(), name='song_update'),

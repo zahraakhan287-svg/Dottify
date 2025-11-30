@@ -8,6 +8,10 @@ from .forms import AlbumForm, SongForm
 from django.utils.text import slugify
 from django.contrib.auth.models import Group
 from .models import DottifyUser
+from django.contrib import messages
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Avg
 
 # Create your views here.
 
@@ -15,15 +19,17 @@ from .models import DottifyUser
 class HomePageView(ListView): 
     template_name = 'home.html'
     context_object_name = 'albums'
+
     def get_queryset(self):
-        return Album.objects.none()  
+        return Album.objects.none()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user  
+        user = self.request.user
 
         albums = Album.objects.filter(public=True)
         songs = Song.objects.none()
-        playlists = Playlist.objects.filter(visibility=2) 
+        playlists = Playlist.objects.filter(visibility=2)
 
         if user.is_authenticated:
 
@@ -43,29 +49,34 @@ class HomePageView(ListView):
                 playlists = Playlist.objects.filter(owner=dottify_user)
 
             else:
-                playlists = Playlist.objects.filter(owner=dottify_user)
                 albums = Album.objects.none()
                 songs = Song.objects.none()
+                playlists = Playlist.objects.filter(owner=dottify_user)
+
         playlists = playlists.prefetch_related('songs')
+
         for album in albums:
             album.can_edit_album = (
-                user.is_authenticated and
-                (user.groups.filter(name='DottifyAdmin').exists() or
-                 (album.artist_account and album.artist_account.user == user))
+                user.is_authenticated and (
+                    user.groups.filter(name='DottifyAdmin').exists() or
+                    (album.artist_account and album.artist_account.user == user)
+                )
             )
 
         for song in songs:
             song.can_edit_song = (
-                user.is_authenticated and
-                (user.groups.filter(name='DottifyAdmin').exists() or
-                 (song.album.artist_account and song.album.artist_account.user == user))
+                user.is_authenticated and (
+                    user.groups.filter(name='DottifyAdmin').exists() or
+                    (song.album.artist_account and song.album.artist_account.user == user)
+                )
             )
 
         context['albums'] = albums
         context['songs'] = songs
         context['playlists'] = playlists
-    
+
         return context
+
 
     
 
@@ -96,13 +107,16 @@ class AlbumDetailView(DetailView):
     model = Album
     template_name = 'albums/album_detail.html'
     context_object_name = 'album'
+
     def get(self, request, *args, **kwargs):
         album = self.get_object()
         url_slug = kwargs.get('slug')
 
-        if   url_slug is None or url_slug != album.slug:
+        if url_slug and url_slug != album.slug:
             return redirect('album_detail_slug', pk=album.pk, slug=album.slug)
+
         return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         album = self.get_object()
@@ -113,27 +127,34 @@ class AlbumDetailView(DetailView):
         context['songs'] = album.song_set.all()
         context['comments'] = album.comment_set.all()
 
-        context['is_admin'] = user.is_authenticated and user.groups.filter(name='DottifyAdmin').exists()
+        context['is_admin'] = (
+            user.is_authenticated and 
+            user.groups.filter(name='DottifyAdmin').exists()
+        )
+
         context['is_artist'] = (
             user.is_authenticated and
             user.groups.filter(name='Artist').exists() and
             artist_account is not None and
             artist_account.user == user
         )
+
         context['is_owner'] = (
             user.is_authenticated and
             hasattr(user, 'dottifyuser') and
             artist_account is not None and
             artist_account == user.dottifyuser
         )
+
         context['can_edit_album'] = (
-            user.is_authenticated and
-            (
+            user.is_authenticated and (
                 user.groups.filter(name='DottifyAdmin').exists() or
                 (artist_account is not None and artist_account.user == user)
             )
         )
+
         return context
+
 
 class AlbumCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Album
@@ -147,8 +168,10 @@ class AlbumCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def form_valid(self, form):
         dottify_user = DottifyUser.objects.get(user=self.request.user)
         form.instance.artist_account = dottify_user
+        messages.success(self.request, "Album created successfully!")
         return super().form_valid(form)
     def get_absolute_url(self):
+        messages.error(self.request, "There was a problem creating the album.")
         return reverse('album_detail_slug', kwargs={'pk': self.pk, 'slug': self.slug})
 
 class AlbumUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -161,9 +184,19 @@ class AlbumUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         user = self.request.user
         return user.groups.filter(name='DottifyAdmin').exists() or (album.artist_account and album.artist_account.user == user)
     def form_valid(self, form):
+        messages.success(self.request, "Album updated successfully!")
         response = super().form_valid(form)
         self.object.refresh_from_db()
         return response
+
+    
+    def form_valid(self, form):
+        messages.success(self.request, "Album updated successfully!")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, "There was a problem updating the album.")
+        return super().form_invalid(form)
 
     def get_success_url(self):
         return reverse('album_detail_slug', kwargs={'pk': self.object.pk, 'slug': self.object.slug})
@@ -179,7 +212,10 @@ class AlbumDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return user.groups.filter(name='DottifyAdmin').exists() or (
             album.artist_account and album.artist_account.user == user
         )
-
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, "Album deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+    
     def handle_no_permission(self):
         return HttpResponseForbidden("You are not allowed to delete this album.")
 
@@ -187,11 +223,21 @@ class SongDetailView(DetailView):
     model = Song
     template_name = 'song_detail.html'
     context_object_name = 'song'
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         song = self.get_object()
         artist_account = song.album.artist_account if song.album else None
+        all_time_avg = song.rating_set.aggregate(avg=Avg('stars'))['avg'] or 0.0
+
+        sixty_days_ago = timezone.now().date() - timedelta(days=60)
+        recent_avg = song.rating_set.filter(
+            created_at__gte=sixty_days_ago
+        ).aggregate(avg=Avg('stars'))['avg'] or 0.0
+
+        context['all_time_avg'] = f"{all_time_avg:.1f}"
+        context['recent_avg'] = f"{recent_avg:.1f}"
 
         context['can_edit_song'] = (
             user.is_authenticated and
@@ -214,7 +260,11 @@ class SongCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 (album and album.artist_account.user == user))
 
     def form_valid(self, form):
+        messages.success(self.request, "Song created successfully!")
         return super().form_valid(form)
+    def form_invalid(self, form):
+        messages.error(self.request, "There was a problem creating the song.")
+        return super().form_invalid(form)
     
 class SongUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         model = Song
@@ -224,23 +274,36 @@ class SongUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             song = self.get_object()
             user = self.request.user
             return user.groups.filter(name='DottifyAdmin').exists() or (song.album.artist_account and song.album.artist_account.user == user)
+        def form_valid(self, form):
+            messages.success(self.request, "Song updated successfully!")
+            return super().form_valid(form)
 
+        def form_invalid(self, form):
+            messages.error(self.request, "There was a problem updating the song.")
+            return super().form_invalid(form)
         def handle_no_permission(self):
             return HttpResponseForbidden("You are not allowed to edit this song.")
+
 class SongDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Song
     template_name = 'songs/song_confirm_delete.html'
-    success_url = reverse_lazy('album_detail_slug')
 
     def test_func(self):
         song = self.get_object()
         user = self.request.user
-        return user.groups.filter(name='DottifyAdmin').exists() or (
-            song.album.artist_account and song.album.artist_account.user == user
+        return (
+            user.groups.filter(name='DottifyAdmin').exists() or
+            (song.album.artist_account and song.album.artist_account.user == user)
         )
 
     def handle_no_permission(self):
         return HttpResponseForbidden("You are not allowed to delete this song.")
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, "Song deleted successfully.")
+        return super().delete(request, *args, **kwargs)
+    def get_success_url(self):
+        album = self.object.album
+        return reverse('album_detail_slug', kwargs={'pk': album.pk, 'slug': album.slug})
 
 class DottifyUserDetailView(DetailView):
     model= DottifyUser

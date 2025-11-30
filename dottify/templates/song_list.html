@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Songs</h1>
+
+<p>Total results found: {{ result_count }}</p>
+
+<ul class="list-group">
+    {% for song in songs %}
+        <li class="list-group-item">
+            <a href="{% url 'song_detail' song.pk %}">
+                {{ song.title }}
+            </a>
+        </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

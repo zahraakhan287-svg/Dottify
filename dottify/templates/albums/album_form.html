@@ -6,29 +6,35 @@
 
     <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
         {% csrf_token %}
+
         <div class="mb-3">
             {{ form.title.label_tag }}
-            {{ form.title|add_class:"form-control" }}
+            {{ form.title }}
         </div>
+
         <div class="mb-3">
             {{ form.artist_name.label_tag }}
-            {{ form.artist_name|add_class:"form-control" }}
+            {{ form.artist_name }}
         </div>
+
         <div class="mb-3">
             {{ form.release_date.label_tag }}
-            {{ form.release_date|add_class:"form-control" }}
+            {{ form.release_date }}
         </div>
+
         <div class="mb-3">
             {{ form.retail_price.label_tag }}
-            {{ form.retail_price|add_class:"form-control" }}
+            {{ form.retail_price }}
         </div>
+
         <div class="mb-3">
             {{ form.format.label_tag }}
-            {{ form.format|add_class:"form-select" }}
+            {{ form.format }}
         </div>
+
         <div class="mb-3">
             {{ form.cover_image.label_tag }}
-            {{ form.cover_image|add_class:"form-control" }}
+            {{ form.cover_image }}
         </div>
 
         {% if form.instance.cover_image %}

@@ -13,6 +13,11 @@
         {% if song.length %}
             <p class="card-text"><strong>Duration:</strong> {{ song.length }} seconds</p>
         {% endif %}
+        
+        <div class="mt-3">
+            <p>Average rating of all time: {{ all_time_avg }}</p>
+            <p>Recent rating average (last 60 days): {{ recent_avg }}</p>
+        </div>
 
         {% if can_edit_song %}
         <div class="mt-3">
