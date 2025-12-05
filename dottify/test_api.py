@@ -7,12 +7,11 @@ from datetime import date, timedelta
 class APIRouteTests(APITestCase):
 
     def setUp(self):
-        # Create a DottifyUser
+
         u = User.objects.create_user(username='annie', email='annie@example.com', password='pw123')
         d_user = DottifyUser.objects.create(user=u, display_name='AnnieMusicLover92')
         self.user_id = d_user.id
 
-        # Create Album
         self.album = Album.objects.create(
             title='Greatest Hits',
             format='SNGL',
@@ -22,13 +21,11 @@ class APIRouteTests(APITestCase):
         )
         self.album_id = self.album.id
 
-        # Create Songs
         self.song1 = Song.objects.create(title='One Hit Wonder', length=281, album=self.album)
         self.song2 = Song.objects.create(title='Another Bop', length=540, album=self.album)
         self.song1_id = self.song1.id
         self.song2_id = self.song2.id
 
-        # Create Playlist (Public)
         self.playlist = Playlist.objects.create(
             name='Work Jams 2',
             owner=d_user,
@@ -44,7 +41,6 @@ class APIRouteTests(APITestCase):
         DottifyUser.objects.all().delete()
         User.objects.all().delete()
 
-    # ---- Album API tests ----
     def test_album_list(self):
         response = self.client.get('/api/albums/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -55,7 +51,6 @@ class APIRouteTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['title'], 'Greatest Hits')
 
-    # ---- Song API tests ----
     def test_song_list(self):
         response = self.client.get('/api/songs/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -66,7 +61,6 @@ class APIRouteTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['title'], 'One Hit Wonder')
 
-    # ---- Playlist API tests ----
     def test_playlist_list_only_public(self):
         response = self.client.get('/api/playlists/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -79,7 +73,6 @@ class APIRouteTests(APITestCase):
         self.assertEqual(response.json()['owner'], 'AnnieMusicLover92')
         self.assertEqual(response.json()['name'], 'Work Jams 2')
 
-    # ---- Nested Album-Song API tests ----
     def test_album_song_list(self):
         response = self.client.get(f'/api/albums/{self.album_id}/songs/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -90,7 +83,6 @@ class APIRouteTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['title'], 'One Hit Wonder')
 
-    # ---- Statistics API test ----
     def test_statistics(self):
         response = self.client.get('/api/statistics/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)

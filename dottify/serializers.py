@@ -44,6 +44,6 @@ class PlaylistSerializer(serializers.ModelSerializer):
         view_name='song-detail')
     class Meta:
         model = Playlist
-        fields = ['id', 'name', 'owner', 'songs', 'visibility'
+        fields = ['id', 'name', 'owner', 'songs', 'created_at'
         ]
         read_only_fields = ['id', 'owner', 'songs']

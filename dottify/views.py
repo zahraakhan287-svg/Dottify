@@ -12,22 +12,29 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Avg
+from django.http import HttpResponse
+
+class RequireLogin401Mixin:
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return HttpResponse(status=401)
+        return super().dispatch(request, *args, **kwargs)
+
 
 # Create your views here.
 
 
 class HomePageView(ListView): 
-    template_name = 'home.html'
-    context_object_name = 'albums'
-
-    def get_queryset(self):
-        return Album.objects.none()
+    model = Album
+    template_name = "home.html"
+    context_object_name = "albums"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        albums = Album.objects.filter(public=True)
+        albums = Album.objects.all()
+
         songs = Song.objects.none()
         playlists = Playlist.objects.filter(visibility=2)
 
@@ -49,7 +56,7 @@ class HomePageView(ListView):
                 playlists = Playlist.objects.filter(owner=dottify_user)
 
             else:
-                albums = Album.objects.none()
+                albums = Album.objects.filter(public=True)
                 songs = Song.objects.none()
                 playlists = Playlist.objects.filter(owner=dottify_user)
 
@@ -78,6 +85,7 @@ class HomePageView(ListView):
         return context
 
 
+
     
 
 class AlbumListView(ListView):
@@ -95,14 +103,19 @@ class AlbumListView(ListView):
                 return Album.objects.filter(artist_account=dottify_user)
         return Album.objects.filter(public=True)
 
-class AlbumSearchView(LoginRequiredMixin, ListView):
+class AlbumSearchView(RequireLogin401Mixin, ListView):
     template_name = 'albums/album_search.html'
     context_object_name = 'albums'
 
     def get_queryset(self):
+        user = self.request.user
         query = self.request.GET.get('q', '')
-        return Album.objects.filter(title__icontains=query)
-    
+
+        qs = Album.objects.filter(title__icontains=query)
+        if not user.groups.filter(name='DottifyAdmin').exists():
+            qs = qs.filter(public=True)
+
+        return qs
 class AlbumDetailView(DetailView):
     model = Album
     template_name = 'albums/album_detail.html'
@@ -170,10 +183,7 @@ class AlbumCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form.instance.artist_account = dottify_user
         messages.success(self.request, "Album created successfully!")
         return super().form_valid(form)
-    def get_absolute_url(self):
-        messages.error(self.request, "There was a problem creating the album.")
-        return reverse('album_detail_slug', kwargs={'pk': self.pk, 'slug': self.slug})
-
+    
 class AlbumUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Album
     form_class = AlbumForm
@@ -182,14 +192,11 @@ class AlbumUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def test_func(self):
         album = self.get_object()
         user = self.request.user
-        return user.groups.filter(name='DottifyAdmin').exists() or (album.artist_account and album.artist_account.user == user)
-    def form_valid(self, form):
-        messages.success(self.request, "Album updated successfully!")
-        response = super().form_valid(form)
-        self.object.refresh_from_db()
-        return response
+        return (
+            user.groups.filter(name='DottifyAdmin').exists()
+            or (album.artist_account and album.artist_account.user == user)
+        )
 
-    
     def form_valid(self, form):
         messages.success(self.request, "Album updated successfully!")
         return super().form_valid(form)
@@ -199,7 +206,10 @@ class AlbumUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return super().form_invalid(form)
 
     def get_success_url(self):
-        return reverse('album_detail_slug', kwargs={'pk': self.object.pk, 'slug': self.object.slug})
+        return reverse(
+            'album_detail_slug',
+            kwargs={'pk': self.object.pk, 'slug': self.object.slug},
+        )
 
 class AlbumDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Album
@@ -221,7 +231,7 @@ class AlbumDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 class SongDetailView(DetailView):
     model = Song
-    template_name = 'song_detail.html'
+    template_name = 'songs/song_detail.html'
     context_object_name = 'song'
 
     def get_context_data(self, **kwargs):
@@ -250,7 +260,7 @@ class SongDetailView(DetailView):
 class SongCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Song
     form_class = SongForm
-    template_name = 'dottify/song_form.html'
+    template_name = 'songs/song_form.html'
     
     def test_func(self):
         album_id = self.request.POST.get('album') or self.request.GET.get('album')
@@ -269,7 +279,7 @@ class SongCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class SongUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         model = Song
         form_class = SongForm
-        template_name = 'dottify/song_form.html'
+        template_name = 'songs/song_form.html'
         def test_func(self):
             song = self.get_object()
             user = self.request.user
@@ -307,7 +317,7 @@ class SongDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
 class DottifyUserDetailView(DetailView):
     model= DottifyUser
-    template_name = 'dottify/user_detail.html'
+    template_name = 'users/user_detail.html'
     context_object_name= 'dottify_user'
     
     def get(self, request, *args, **kwargs):
@@ -315,7 +325,7 @@ class DottifyUserDetailView(DetailView):
         slug = kwargs.get('slug')
         correct_slug = slugify(user.display_name)
         if slug != correct_slug:
-            return redirect('user_detail', pk=user.pk, slug=correct_slug)
+            return redirect('user_detail_slug', pk=user.pk, slug=correct_slug)
         return super().get(request, *args, **kwargs)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
